@@ -101,10 +101,10 @@ end
 function main(storage_path, script_path, arg_line)
 	arg_line = arg_line or ""
 
-    local msg = "hello from lua!\n" ..
-	"storage path: " .. storage_path .. "\n" ..
-    "script path: " ..script_path .. "\n" ..
-    "arg line:" .. arg_line .. "\n"
+    local msg = " hello from lua!\n" ..
+	" storage path: " .. storage_path .. "\n" ..
+    " script path: " ..script_path .. "\n" ..
+    " arg line:" .. arg_line
 
 	if os.getenv("RAN_FROM_EXPLORER") == "1" then
 		print("some console text")
@@ -112,7 +112,7 @@ function main(storage_path, script_path, arg_line)
 		print("some console text")
 		AlertBox(msg)
 	else
-		print(msg)
+		io.write(msg)
 	end
 end
 
