@@ -1,6 +1,5 @@
-rem =nil BATCH_PROGRAM=[[
+::_::BATCH_PROGRAM=[[
 @echo off
-
 IF %0 == "%~0" set RAN_FROM_EXPLORER=1
 set APP_NAME=appexample
 set ARG_LINE=%*
