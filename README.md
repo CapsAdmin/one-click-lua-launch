@@ -1,9 +1,9 @@
 This is a way of running Lua with one or two mouse clicks on 
-Linux, macOS and Windows. It also supports running from command line
+Linux, macOS and Windows. It also supports running properly 
+from the command line. It works by simply downloading the Lua 
+executable with batch or shell from the internet.
 
-It works by downloading Lua externally.
-
-By default, this writes to `$HOME/.myluapp` on Unix and `%appdata%\myluapp` 
+By default, this writes to `$HOME/.appexample` on Unix and `%appdata%\appexample` 
 on Windows but you can also set it to write to the current directory to
 make something like a portable folder. 
 
