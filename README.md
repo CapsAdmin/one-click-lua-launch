@@ -3,7 +3,7 @@ Linux, macOS and Windows. It also supports running from command line
 
 It works by downloading Lua externally.
 
-By default, this writes to `$HOME/.myluapp` on Unix and `%appdata%\myluapp` 
+By default, this writes to `$HOME/.appexample` on Unix and `%appdata%\appexample` 
 on Windows but you can also set it to write to the current directory to
 make something like a portable folder. 
 
