@@ -1,62 +1,51 @@
 #!/bin/sh
 SHELL_PROGRAM=[=[
-realpath() {
-    OURPWD=$PWD
-    cd "$(dirname "$1")"
-    LINK=$(readlink "$(basename "$1")")
-    while [ "$LINK" ]; do
-        cd "$(dirname "$LINK")"
-        LINK=$(readlink "$(basename "$1")")
-    done
-    REALPATH="$PWD/$(basename "$1")"
-    cd "$OURPWD"
-    echo "$REALPATH"
-}
+case $(uname -m) in x86_64) ARCH=x64;; i[36]86) ARCH=x86;; arm*) ARCH=arm;; esac
+case $(uname) in Darwin) OS=osx;; *) OS=linux;; esac
+APP_NAME="appexample"
+ARG_LINE="$*"
+STORAGE_PATH="data"
+BINARY_DIR="$STORAGE_PATH/${OS}_${ARCH}"
+BINARY_NAME="luajit"
+URL="https://gitlab.com/CapsAdmin/goluwa-binaries-${OS}_${ARCH}/raw/master/$BINARY_NAME"
 
-export APP_NAME="appexample"
-export ARG_LINE="$*"
-export SCRIPT_PATH=$(realpath "$0")
-export STORAGE_PATH="$HOME/.$APP_NAME"
+ZERO_ARG="$0"
 
+if [ "$OS" = osx ] && [[ $ZERO_ARG =~ /Users/* ]]; then
+    RAN_FROM_FILEBROWSER=1
+fi
 
-if [[ "$OSTYPE" == "darwin"* ]]>/dev/null 2>&1; then
-    if [[ $0 =~ /Users/* ]]; then
-        export RAN_FROM_EXPLORER=1
-    fi
-elif [ ! -t 1 ]; then
-	export RAN_FROM_EXPLORER=1
+if [ "$OS" = linux ] && [ ! -t 1 ]; then
+    RAN_FROM_FILEBROWSER=1
 fi
 
 Main() {
-	ARCH=unknown
-	OS=unknown
-	case $(uname -m) in x86_64) ARCH=x64;; i[36]86) ARCH=x86;; arm*) ARCH=arm;; esac
-	case $(uname) in Darwin) OS=osx;; *) OS=linux;; esac
+	DownloadLua "$URL" "$BINARY_DIR" "$BINARY_NAME"
+	
+	SCRIPT_PATH=$(realpath "$ZERO_ARG")
+	binary_path="$BINARY_DIR/$BINARY_NAME $SCRIPT_PATH"
 
-	DownloadLua "https://gitlab.com/CapsAdmin/goluwa-binaries-${OS}_${ARCH}/raw/master/luajit" "$STORAGE_PATH/${OS}_${ARCH}" "luajit"
+	export STORAGE_PATH
+	export ARG_LINE
+	export SCRIPT_PATH
+	export RAN_FROM_FILEBROWSER
 
+	if [ "$RAN_FROM_FILEBROWSER" = 1 ]; then
+        clear
+		$binary_path
+		exit_code=$?
 
-	if [ "$((RAN_FROM_EXPLORER+0))" -eq 1 ]; then
-		captured_output="$("$STORAGE_PATH/${OS}_${ARCH}/luajit" "$SCRIPT_PATH" 2>&1)"
+		if [ "$OS" = osx ]; then
+			if [ $exit_code -ne 0 ]; then
+				osascript -e "tell app \"System Events\" to display dialog \"$SCRIPT_PATH exited with code $exit_code\" with title \"error\""
+			fi
+			osascript -e 'tell application "Terminal" to quit' & exit
+		elif [ $exit_code -ne 0 ]; then
+			echo "$SCRIPT_PATH exited with code $exit_code" | xmessage -nearmouse -title error -file -
+		fi
 	else
-		"$STORAGE_PATH/${OS}_${ARCH}/luajit" "$SCRIPT_PATH"
+		$binary_path
 	fi
-
-	code=$?
-
-	if [[ "$OSTYPE" == "darwin"* ]] >/dev/null 2>&1; then
-		if [ $code -ne 0 ] && [ "$((RAN_FROM_EXPLORER+0))" -eq 1 ]; then
-            echo $captured_output
-			exit
-		fi
-		osascript -e 'tell application "Terminal" to quit' & exit
-	elif [ "$((RAN_FROM_EXPLORER+0))" -eq 1 ]; then
-		if [ $code -ne 0 ]; then
-			xmessage "$captured_output"
-		fi
-	fi
-
-
 }
 
 DownloadLua() {
@@ -64,27 +53,28 @@ DownloadLua() {
 	directory="$2"
 	filename="$3"
 
-    mkdir -p "$directory"
+    if [ -f "$directory/lua_downloaded_and_validated" ]; then return; fi
 
-    if [ ! -f "$directory/lua_downloaded_and_validated" ]; then
-        DownloadFile "$url" "$directory/$filename"
+	path="$directory/$filename"
+	mkdir -p "$directory"
 
-        echo "validating $directory/$filename .. "
-        chmod +x "$directory/$filename"
-        "$directory/$filename" -e "os.exit(1)"
-        status=$?
+	DownloadFile "$url" "$path"
 
-        if [ $status -ne 1 ]; then
-            echo "exit code 'os.exit(1)' does not match $status"
-            echo "removing $directory/$filename in 5 seconds to try again"
-			sleep 5s
-            rm "$directory/$filename"
-            Main
-        else
-			echo "validation successful"
-            touch "$directory/lua_downloaded_and_validated"
-        fi
-    fi
+	echo "validating $path .. "
+	chmod +x "$path" 
+	$path -e "os.exit(0)"
+	status=$?
+
+	if [ $status -eq 0 ]; then
+		echo "validation successful"
+		touch "$directory/lua_downloaded_and_validated"
+	else
+		echo "exit code 'os.exit(0)' does not match $status"
+		echo "removing $path in 5 seconds to try again"
+		sleep 5s
+		rm "$path"
+		Main
+	fi
 }
 
 DownloadFile () {
@@ -108,42 +98,52 @@ DownloadFile () {
     fi
 }
 
+realpath() {
+    OURPWD=$PWD
+    cd "$(dirname "$1")"
+    LINK=$(readlink "$(basename "$1")")
+    while [ "$LINK" ]; do
+        cd "$(dirname "$LINK")"
+        LINK=$(readlink "$(basename "$1")")
+    done
+    REALPATH="$PWD/$(basename "$1")"
+    cd "$OURPWD"
+    echo "$REALPATH"
+}
+
 Main
 
 exit 0
 ]=]
 
-function AlertBox(msg)
+function AlertBox(msg, title)
+	title = title or ""
 	if io.popen("command -v xmessage"):read("*all") ~= "" then
-		local f = io.popen("xmessage -file -", "w")
+		local f = io.popen("xmessage -nearmouse -title \"" .. title .. "\" -file -", "w")
 		f:write(msg)
 		f:close()
 	else
 		msg = msg:gsub("\n", "\\n")
-		os.execute([[osascript -e 'tell app "System Events" to display dialog "]]..msg..[["']])
+		os.execute([[osascript -e 'tell app "System Events" to display dialog "]]..msg..[[" with title "]]..title..[["']])
 	end
 end
 
 function main(storage_path, script_path, arg_line)
 	arg_line = arg_line or ""
 
-    local msg = "hello from lua!\n" ..
-	"storage path: " .. storage_path .. "\n" ..
+    local msg = "storage path: " .. storage_path .. "\n" ..
     "script path: " ..script_path .. "\n" ..
-    "arg line:" .. arg_line .. "\n"
+    "arg line:" .. arg_line
 
-	if os.getenv("RAN_FROM_EXPLORER") == "1" then
-		print("some console text")
-		print("some console text")
-		print("some console text")
-		AlertBox(msg)
+	for i = 1, 10 do
+		print("some console text " .. i)
+	end
+
+	if os.getenv("RAN_FROM_FILEBROWSER") == "1" then
+		AlertBox(msg, "hello from lua!")
 	else
 		print(msg)
 	end
-end
-
-if os.getenv("RAN_FROM_EXPLORER") == "1" then
-    os.execute("clear")
 end
 
 main(
