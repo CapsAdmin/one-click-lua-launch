@@ -21,6 +21,10 @@ DownloadFile "https://foobar.com/baz" "baz"
 :: Uses curl or powershell
 call:DownloadFile "https://foobar.com/baz.exe" "baz.exe"
 ```
+The DownloadFile function on Windows will use curl, powershell or Windows Script Host
+depending on what's available. It should work on windows 2000 and up, but beware of the
+lack of https support on old versions of windows.
+
 When downloading an executable it's good practice to run validation afterwards 
 to make sure it works. For example, if `lua_downloaded_and_validated` 
 doesn't exist download luajit.exe, check if the exit code is correct by running
