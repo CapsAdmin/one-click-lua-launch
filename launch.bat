@@ -77,20 +77,49 @@ goto:eof
 SetLocal
 	set url=%~1
 	set output_path=%~2
-
-	where curl
-	if !errorlevel! equ 0 (
-		curl -L --url "!url!" --output "!output_path!"
-		goto:eof
-	) else (
-		where powershell
-		if !errorlevel! equ 0 (
-			PowerShell -NoLogo -NoProfile -NonInteractive "(New-Object System.Net.WebClient).DownloadFile('!url!','%~dp0!filename!')"
-			goto:eof
+	
+	if not exist !SystemRoot!\System32\where (
+	
+		set tmp_name=!TEMP!\lua_one_click_jscript_download.js
+		del /F !tmp_name! 2>NUL
+		echo //test >> !tmp_name!
+		
+		if not exist !tmp_name! (
+			echo unable to create temp file !tmp_name! !
+			echo exiting
+			exit /b
 		)
+		
+		set forward_slash_path=!output_path:\=/!
+		
+		echo var req = new ActiveXObject^("Microsoft.XMLHTTP"^); >> !tmp_name!
+		echo req.Open^("GET","!url!",false^); >> !tmp_name!
+		echo req.Send^(^); >> !tmp_name!
+		echo var stream = new ActiveXObject^("ADODB.Stream"^); >> !tmp_name!
+		echo stream.Type = 1; >> !tmp_name!
+		echo stream.Open^(^);stream.Write^(req.responseBody^); >> !tmp_name!
+		echo stream.SaveToFile^("!forward_slash_path!", 2^) >> !tmp_name!
+		echo stream.Close^(^); >> !tmp_name!
+		
+		cscript /E:JScript !tmp_name!
+		
+		del /F !tmp_name! 2>NUL
+		
+	) else (
+		where curl
+		if !errorlevel! equ 0 (
+			curl -L --url "!url!" --output "!output_path!"
+			goto:eof
+		) else (
+			where powershell
+			if !errorlevel! equ 0 (
+				PowerShell -NoLogo -NoProfile -NonInteractive "(New-Object System.Net.WebClient).DownloadFile('!url!','%~dp0!filename!')"
+				goto:eof
+			)
+		)
+		echo "unable to find curl or powershell"
+		exit /b
 	)
-	echo "unable to find curl or powershell"
-	exit /b
 EndLocal
 goto:eof
 rem ]]
