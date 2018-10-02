@@ -1,7 +1,10 @@
-This is a way of running Lua with one or two mouse clicks on Linux, macOS and 
-Windows. It also supports running properly from the command line. It works 
-by simply downloading the Lua executable with Batch or Shell from the internet.
+### About
 
+This is a way of running Lua with a mouse click on Linux, macOS and Windows. 
+It supports a way to detect if ran from a file browser or command line, arguments,
+shortcuts on Windows (with arguments) and a nice way of showing errors.
+
+It works by simply downloading the Lua executable with Shell or Batch from the internet. 
 By default, the scripts download files to `./data/*` but you can also set it to 
 write to `$HOME/.appexample` on Unix or`%appdata%\appexample` on Windows
 if you want.
