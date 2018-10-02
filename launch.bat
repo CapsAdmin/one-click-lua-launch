@@ -58,10 +58,12 @@ SetLocal
 		!abs_path! -e "os.exit(1)"
 
 		if !errorlevel! neq 1 (
-			echo "exit code 'os.exit(1)' does not match 1"
-			echo "removing !abs_path! in 5 seconds to try again"
-			timeout 5
+			echo "exit code from lua does not match 'os.exit(1)'"
 			del !abs_path!
+			echo "removing !abs_path!"
+
+			pause
+
 			EndLocal
 			goto Start
 		)
