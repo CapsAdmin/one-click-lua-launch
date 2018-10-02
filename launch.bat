@@ -1,39 +1,41 @@
 ::_::BATCH_PROGRAM=[[
 @echo off
-IF %0 == "%~0" set RAN_FROM_EXPLORER=1
+SetLocal EnableDelayedExpansion
+
+(set | find "ProgramFiles(x86)" > NUL) && (echo "!ProgramFiles(x86)!" | find "x86") > NUL && set ARCH=x64|| set ARCH=x86
+set OS=windows
 set APP_NAME=appexample
 set ARG_LINE=%*
-set SCRIPT_PATH=%~dpnx0
 set STORAGE_PATH=data
+set BINARY_DIR=!STORAGE_PATH!\!OS!_!ARCH!
+set BINARY_NAME=luajit.exe
+set BASE_URL=https://gitlab.com/CapsAdmin/goluwa-binaries-!OS!_!ARCH!/raw/master/
+
+set SCRIPT_PATH=%~dpnx0
+
+IF %0 == "%~0" set RAN_FROM_FILEBROWSER=1
 
 :Start
-SetLocal EnableDelayedExpansion
 call:Main
 goto:eof
 
 :Main
 SetLocal
-	set ARCH=unknown
-	set OS=windows
+	if not exist "!BINARY_DIR!" ( mkdir "!BINARY_DIR!" )
 
-	(set | find "ProgramFiles(x86)" > NUL) && (echo "!ProgramFiles(x86)!" | find "x86") > NUL && set ARCH=x64|| set ARCH=x86
-
-	set url=https://gitlab.com/CapsAdmin/goluwa-binaries-!OS!_!ARCH!/raw/master/
-	set dir=!STORAGE_PATH!\!OS!_!ARCH!
-
-	if not exist "!dir!" ( mkdir "!dir!" )
-
-	if not exist "!dir!\lua_downloaded_and_validated" (
-		call:DownloadFile "!url!lua51.dll" "!dir!\lua51.dll"
-		call:DownloadFile "!url!vcruntime140.dll" "!dir!\vcruntime140.dll"
+	if not exist "!BINARY_DIR!\lua_downloaded_and_validated" (
+		call:DownloadFile "!BASE_URL!lua51.dll" "!BINARY_DIR!\lua51.dll"
+		call:DownloadFile "!BASE_URL!vcruntime140.dll" "!BINARY_DIR!\vcruntime140.dll"
 	)
-
-	call:DownloadLua "!url!luajit.exe" "!dir!" "luajit.exe"
-
-	IF RAN_FROM_EXPLORER equ 1 (
-		start "" "!dir!\luajit.exe" "!SCRIPT_PATH!"
+	
+	call:DownloadLua "!BASE_URL!!BINARY_NAME!" "!BINARY_DIR!" "!BINARY_NAME!"
+	
+	set cmd_line="!BINARY_DIR!\!BINARY_NAME!" "!SCRIPT_PATH!"
+	
+	IF RAN_FROM_FILEBROWSER equ 1 (
+		start "" !cmd_line!
 	) else (
-		"!dir!\luajit.exe" "!SCRIPT_PATH!"
+		!cmd_line!
 	)
 
 	if !errorlevel! neq 0 (
@@ -91,7 +93,7 @@ EndLocal
 goto:eof
 rem ]]
 
-function AlertBox(msg)
+function AlertBox(msg, title)
 	msg = msg:gsub("\\", "/"):gsub("\n", "\\n")
 	os.execute([[mshta javascript:alert("]]..msg..[[");close();]])
 end
@@ -103,19 +105,16 @@ function main(storage_path, script_path, arg_line)
 	" storage path: " .. storage_path .. "\n" ..
     " script path: " ..script_path .. "\n" ..
     " arg line:" .. arg_line
+	
+	for i = 1, 10 do
+		print("some console text " .. i)
+	end
 
-	if os.getenv("RAN_FROM_EXPLORER") == "1" then
-		print("some console text")
-		print("some console text")
-		print("some console text")
+	if os.getenv("RAN_FROM_FILEBROWSER") == "1" then
 		AlertBox(msg)
 	else
 		io.write(msg)
 	end
-end
-
-if os.getenv("RAN_FROM_EXPLORER") == "1" then
-	os.execute("cls")
 end
 
 main(
