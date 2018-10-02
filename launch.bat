@@ -4,7 +4,7 @@ IF %0 == "%~0" set RAN_FROM_EXPLORER=1
 set APP_NAME=appexample
 set ARG_LINE=%*
 set SCRIPT_PATH=%~dpnx0
-set STORAGE_PATH=%appdata%\%APP_NAME%
+set STORAGE_PATH=data
 
 :Start
 SetLocal EnableDelayedExpansion
