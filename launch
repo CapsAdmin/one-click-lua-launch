@@ -35,13 +35,12 @@ Main() {
 		$binary_path
 		exit_code=$?
 
+		if [ $exit_code -ne 0 ]; then
+			AlertBox "$SCRIPT_PATH exited with code $exit_code" "error"
+			exit 1
+		fi
 		if [ "$OS" = osx ]; then
-			if [ $exit_code -ne 0 ]; then
-				osascript -e "tell app \"System Events\" to display dialog \"$SCRIPT_PATH exited with code $exit_code\" with title \"error\""
-			fi
 			osascript -e 'tell application "Terminal" to quit' & exit
-		elif [ $exit_code -ne 0 ]; then
-			echo "$SCRIPT_PATH exited with code $exit_code" | xmessage -nearmouse -title error -file -
 		fi
 	else
 		$binary_path
@@ -86,15 +85,24 @@ DownloadFile () {
     elif command -v curl >/dev/null 2>&1; then
         curl -L --url "$url" --output "$output_path"
     else
-        echo "unable to find wget or curl"
+        AlertBox "unable to find wget or curl" "error"
         exit 1
     fi
 
     if [ $? -ne 0 ]; then
-		echo "wget or curl failed with exit code $?"
-		echo "cleaning up and exiting.."
+        AlertBox "wget or curl failed with exit code $?" "error"
         rm "$output_path"
         exit 1
+    fi
+}
+
+AlertBox() {
+    msg=$1
+    title=$2
+    if [ "$OS" = osx ]; then
+        osascript -e "tell app \"System Events\" to display dialog \"$msg\" with title \"$title\""
+    else
+        echo "$msg" | xmessage -nearmouse -title "$title" -file -
     fi
 }
 
